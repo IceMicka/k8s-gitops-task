@@ -69,7 +69,31 @@
 
 ---
 
-## Create the local multi-node cluster (k3d)
+## Setup the local environment 
+Install Docker Desktop and enable “Use the WSL 2 based engine”
+
+sudo apt-get update -y && sudo apt-get upgrade -y
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -m 0755 kubectl /usr/local/bin/kubectl
+
+curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+k3d version
+
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm version
+
+sudo apt-get install -y gnupg software-properties-common
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+  | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt-get update -y && sudo apt-get install -y terraform
+terraform version
+
+## Clone the repo
+
+git clone https://github.com/IceMicka/k8s-gitops-task.git
+cd k8s-gitops-task
 
 ## Create 1 server + 3 agents; disable K3s servicelb (we use MetalLB)
 k3d cluster create dev-cluster \
@@ -82,7 +106,8 @@ kubectl get nodes -o wide
 
 ## Terraform installs MetalLB, ingress-nginx, Argo CD, creates namespaces, applies the Argo CD Applications (App of Apps).
 cd terraform
-terraform init -upgrade
+terraform init 
+
 terraform apply -auto-approve \
   -var="repo_url=https://github.com/IceMicka/k8s-gitops-task.git" \
   -var="mysql_root_password=***"  # passwd is a variable needs to set with the apply
@@ -116,6 +141,13 @@ If on windows add to C:\Windows\System32\drivers\etc\hosts but run as Admin
 Test from browser
 http://argocd.localtest.me:18080/
 http://myapp.localtest.me:18080/
+
+## Access Argo CD UI and monitor apps
+
+ArgoCD UI - http://argocd.localtest.me:18080/
+Get the initial admin passwd
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d; echo
 
 ## Database and backups
 infrastructure/mysql-initdb-configmap.yaml
@@ -153,6 +185,58 @@ job.batch/mysql-backup-29301560   Complete   1/1           4s         19m
 job.batch/mysql-backup-29301565   Complete   1/1           4s         14m
 job.batch/mysql-backup-29301570   Complete   1/1           5s         9m29s
 job.batch/mysql-backup-29301575   Complete   1/1           5s         4m29s``` </pre>
+
+Check backups from inside a pod. Create inspect pod
+
+<pre>kubectl -n infrastructure apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backup-inspect
+spec:
+  restartPolicy: Never
+  containers:
+  - name: sh
+    image: alpine:3.19
+    command: ["/bin/sh","-lc","sleep 3600"]
+    volumeMounts:
+    - name: backup
+      mountPath: /backup
+  volumes:
+  - name: backup
+    persistentVolumeClaim:
+      claimName: mysql-backup-pvc
+EOF<pre>
+
+List backups written by the cronjob
+kubectl -n infrastructure exec -it pod/backup-inspect -- sh -lc 'ls -lt /backup | head'  
+   
+## Access the frontend & confirm backend + DB persistence
+
+From Browser via Ingress - http://myapp.localtest.me:18080/
+From cluster
+<pre>kubectl -n applications run curl --image=curlimages/curl:8.7.1 -it --rm --restart=Never -- \
+  sh -lc '
+    set -eux
+    echo "Frontend Service:";  nslookup myapp-frontend || true
+    echo "Backend Service:";   nslookup myapp-backend || true
+    echo "Backend /health:";   curl -sS http://myapp-backend:5678/health || true
+  '<pre>
+
+Verify DB schema/data
+<pre>kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
+  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
+    USE demo;
+    SHOW TABLES;
+    SELECT COUNT(*) AS rows_in_messages FROM messages;
+  "
+'<pre>
+
+## Clean up the entire environment
+cd terraform
+terraform destroy -auto-approve
+
+k3d cluster delete dev-cluster
 
 ## Checklist
 Check the nodes
