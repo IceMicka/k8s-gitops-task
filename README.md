@@ -246,6 +246,22 @@ List backups written by the cronjob
 <pre>
 kubectl -n infrastructure exec -it pod/backup-inspect -- sh -lc 'ls -lt /backup | head'  
 </pre>
+
+Should look like similar to this
+
+<pre>
+ice@LAPTOP-66P41854:~$ kubectl -n infrastructure exec -it pod/backup-inspect -- sh -lc 'ls -lt /backup | head'
+total 8520
+-rw-r--r--    1 root     root        870953 Sep 17 09:35 backup-20250917-093501.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:30 backup-20250917-093001.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:25 backup-20250917-092501.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:20 backup-20250917-092001.sql.gz
+-rw-r--r--    1 root     root        870953 Sep 17 09:15 backup-20250917-091501.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:10 backup-20250917-091000.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:05 backup-20250917-090501.sql.gz
+-rw-r--r--    1 root     root        870954 Sep 17 09:00 backup-20250917-090000.sql.gz
+-rw-r--r--    1 root     root        870953 Sep 17 08:55 backup-20250917-085501.sql.gz 
+</pre>
    
 ## Access the frontend & confirm backend + DB persistence
 
@@ -272,6 +288,21 @@ kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
     SELECT COUNT(*) AS rows_in_messages FROM messages;
   "
 '
+</pre>
+
+Should look like similar to this
+
+</pre>
++----------------+
+| Tables_in_demo |
++----------------+
+| messages       |
++----------------+
++------------------+
+| rows_in_messages |
++------------------+
+|                2 |
++------------------+
 </pre>
 
 ## Clean up the entire environment
