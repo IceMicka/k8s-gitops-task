@@ -11,20 +11,21 @@
 
 ## Architecture
 
-Docker (k3d) → Kubernetes (1 server, 3 agents)
-MetalLB — assigns IPs to LoadBalancer Services
-ingress-nginx — routes external HTTP to Services
-Argo CD (installed by Terraform)
-Root app (“App of Apps”) that syncs this repo:
-infrastructure — MySQL chart + init + backup CronJob + PVC
-applications — custom Helm chart: frontend + backend + Ingress
-policies — ResourceQuota + LimitRange
-Namespaces: argocd, infrastructure, applications
+- Docker (k3d) → Kubernetes (1 server, 3 agents)
+- MetalLB — assigns IPs to LoadBalancer Services
+- ingress-nginx — routes external HTTP to Services
+- Argo CD (installed by Terraform)
+- Root app (“App of Apps”) that syncs this repo:
+- infrastructure — MySQL chart + init + backup CronJob + PVC
+- applications — custom Helm chart: frontend + backend + Ingress
+- policies — ResourceQuota + LimitRange
+- Namespaces: argocd, infrastructure, applications
 
 ---
 
 ## Repository layout
 
+```text
 ├─ README.md
 ├─ terraform/
 │  ├─ providers.tf
@@ -56,7 +57,6 @@ Namespaces: argocd, infrastructure, applications
 │  └─ backup-cronjob.yaml
 └─ proxy/
    └─ argocd-proxy.conf.example
-
 
 ---
 
