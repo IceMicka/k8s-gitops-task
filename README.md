@@ -71,7 +71,7 @@
 
 ## Create the local multi-node cluster (k3d)
 
-# Create 1 server + 3 agents; disable K3s servicelb (we use MetalLB)
+## Create 1 server + 3 agents; disable K3s servicelb (we use MetalLB)
 k3d cluster create dev-cluster \
   --servers 1 --agents 3 \
   --api-port 6550 \
@@ -80,7 +80,7 @@ k3d cluster create dev-cluster \
 kubectl config use-context k3d-dev-cluster
 kubectl get nodes -o wide
 
-# Terraform installs MetalLB, ingress-nginx, Argo CD, creates namespaces, applies the Argo CD Applications (App of Apps).
+## Terraform installs MetalLB, ingress-nginx, Argo CD, creates namespaces, applies the Argo CD Applications (App of Apps).
 cd terraform
 terraform init -upgrade
 terraform apply -auto-approve \
@@ -92,7 +92,7 @@ kubectl get pods -A
 kubectl -n argocd get deploy,svc,ing
 kubectl -n ingress-nginx get svc,pods -o wide
 
-# Create nginx container inside WSL that forwards to the MetalLB IP
+## Create nginx container inside WSL that forwards to the MetalLB IP
 Get the MetalLB IP of the ingress controller service
 export INGRESS_IP=$(kubectl -n ingress-nginx \
   get svc ingress-nginx-controller \
@@ -117,14 +117,14 @@ Test from browser
 http://argocd.localtest.me:18080/
 http://myapp.localtest.me:18080/
 
-# Database and backups
+## Database and backups
 infrastructure/mysql-initdb-configmap.yaml
 Backups: infrastructure/backup-cronjob.yaml runs every 5 minutes, writing dumps to the PVC defined in infrastructure/backup-pvc.yaml. Retention is 10 latest backups.
 
 Basic checks
 kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
 Should like similar to this
-ice@LAPTOP-66P41854:~$ kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
+<pre> ```ice@LAPTOP-66P41854:~$ kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
 NAME                     READY   AGE
 statefulset.apps/mysql   1/1     10h
 
@@ -152,9 +152,9 @@ job.batch/mysql-backup-29301555   Complete   1/1           4s         24m
 job.batch/mysql-backup-29301560   Complete   1/1           4s         19m
 job.batch/mysql-backup-29301565   Complete   1/1           4s         14m
 job.batch/mysql-backup-29301570   Complete   1/1           5s         9m29s
-job.batch/mysql-backup-29301575   Complete   1/1           5s         4m29s
+job.batch/mysql-backup-29301575   Complete   1/1           5s         4m29s``` </pre>
 
-# Checklist
+## Checklist
 Check the nodes
 kubectl get nodes -o wide
 
