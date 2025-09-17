@@ -25,6 +25,7 @@
 
 ## Repository layout
 
+<pre>
 ├─ README.md
 ├─ terraform/
 │  ├─ providers.tf
@@ -56,6 +57,7 @@
 │  └─ backup-cronjob.yaml
 └─ proxy/
    └─ argocd-proxy.conf.example
+</pre>
 
 ---
 
