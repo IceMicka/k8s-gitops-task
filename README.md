@@ -72,14 +72,16 @@
 ## Setup the local environment 
 Install Docker Desktop and enable “Use the WSL 2 based engine”
 
+<pre>
 sudo apt-get update -y && sudo apt-get upgrade -y
+<pre>
 
+<pre>   
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -m 0755 kubectl /usr/local/bin/kubectl
-
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 k3d version
-
+   
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 helm version
 
@@ -89,13 +91,18 @@ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://
   | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update -y && sudo apt-get install -y terraform
 terraform version
-
+<pre>
+   
 ## Clone the repo
 
+<pre>
 git clone https://github.com/IceMicka/k8s-gitops-task.git
 cd k8s-gitops-task
-
+<pre>
+   
 ## Create 1 server + 3 agents; disable K3s servicelb (we use MetalLB)
+
+<pre>
 k3d cluster create dev-cluster \
   --servers 1 --agents 3 \
   --api-port 6550 \
@@ -103,38 +110,54 @@ k3d cluster create dev-cluster \
 
 kubectl config use-context k3d-dev-cluster
 kubectl get nodes -o wide
-
+<pre>
+   
 ## Terraform installs MetalLB, ingress-nginx, Argo CD, creates namespaces, applies the Argo CD Applications (App of Apps).
+
+<pre>
 cd terraform
 terraform init 
 
 terraform apply -auto-approve \
   -var="repo_url=https://github.com/IceMicka/k8s-gitops-task.git" \
   -var="mysql_root_password=***"  # passwd is a variable needs to set with the apply
-
+<pre>
+   
 Verify the workload is running as expected
+
+<pre>
 kubectl get pods -A
 kubectl -n argocd get deploy,svc,ing
 kubectl -n ingress-nginx get svc,pods -o wide
-
+<pre>
+   
 ## Create nginx container inside WSL that forwards to the MetalLB IP
 Get the MetalLB IP of the ingress controller service
+
+<pre>
 export INGRESS_IP=$(kubectl -n ingress-nginx \
   get svc ingress-nginx-controller \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
+<pre>
+   
 Proxy config that points to INGRESS_IP
+
+<pre>
 sed "s/REPLACE_ME_IP/${INGRESS_IP}/g" \
   ../proxy/argocd-proxy.conf.example > ../proxy/argocd-proxy.conf
-
+<pre>
+   
 Start the proxy container
+
+<pre>
 docker rm -f argocd-proxy 2>/dev/null || true
 docker run -d --restart unless-stopped --name argocd-proxy \
   --network k3d-dev-cluster \
   -p 18080:18080 \
   -v "$PWD/proxy/argocd-proxy.conf:/etc/nginx/conf.d/default.conf:ro" \
   nginx:1.25
-
+<pre>
+   
 If on windows add to C:\Windows\System32\drivers\etc\hosts but run as Admin
 127.0.0.1  argocd.localtest.me myapp.localtest.me
 
@@ -146,15 +169,23 @@ http://myapp.localtest.me:18080/
 
 ArgoCD UI - http://argocd.localtest.me:18080/
 Get the initial admin passwd
+
+<pre>
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d; echo
-
+<pre>
+   
 ## Database and backups
+   
 infrastructure/mysql-initdb-configmap.yaml
 Backups: infrastructure/backup-cronjob.yaml runs every 5 minutes, writing dumps to the PVC defined in infrastructure/backup-pvc.yaml. Retention is 10 latest backups.
 
 Basic checks
+
+<pre>
 kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
+<pre>
+   
 Should like similar to this
 <pre> ```ice@LAPTOP-66P41854:~$ kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
 NAME                     READY   AGE
@@ -188,7 +219,8 @@ job.batch/mysql-backup-29301575   Complete   1/1           5s         4m29s``` <
 
 Check backups from inside a pod. Create inspect pod
 
-<pre>kubectl -n infrastructure apply -f - <<'EOF'
+<pre>
+kubectl -n infrastructure apply -f - <<'EOF'
 apiVersion: v1
 kind: Pod
 metadata:
@@ -206,51 +238,78 @@ spec:
   - name: backup
     persistentVolumeClaim:
       claimName: mysql-backup-pvc
-EOF<pre>
+EOF
+<pre>
 
 List backups written by the cronjob
+
+<pre>
 kubectl -n infrastructure exec -it pod/backup-inspect -- sh -lc 'ls -lt /backup | head'  
+<pre>
    
 ## Access the frontend & confirm backend + DB persistence
 
 From Browser via Ingress - http://myapp.localtest.me:18080/
 From cluster
-<pre>kubectl -n applications run curl --image=curlimages/curl:8.7.1 -it --rm --restart=Never -- \
+
+<pre>
+kubectl -n applications run curl --image=curlimages/curl:8.7.1 -it --rm --restart=Never -- \
   sh -lc '
     set -eux
     echo "Frontend Service:";  nslookup myapp-frontend || true
     echo "Backend Service:";   nslookup myapp-backend || true
     echo "Backend /health:";   curl -sS http://myapp-backend:5678/health || true
-  '<pre>
+  '<
+<pre>
 
 Verify DB schema/data
-<pre>kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
+
+<pre>
+kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
   mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "
     USE demo;
     SHOW TABLES;
     SELECT COUNT(*) AS rows_in_messages FROM messages;
   "
-'<pre>
+'
+<pre>
 
 ## Clean up the entire environment
+
+<pre>
 cd terraform
 terraform destroy -auto-approve
 
 k3d cluster delete dev-cluster
-
+<pre>
+   
 ## Checklist
 Check the nodes
+
+<pre>
 kubectl get nodes -o wide
-
+<pre>
+   
 ArgoCD apps synced and Healthy
+<pre>
 kubectl -n argocd get applications
-
+<pre>
+   
 Check the ingress
+
+<pre>
 kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
-
+<pre>
+   
 Check app objects
+   
+<pre>
 kubectl -n applications get deploy,svc,ingress
-
+<pre>
+   
 Check backups are running
+
+<pre>
 kubectl -n infrastructure get cronjob
 kubectl -n infrastructure get jobs --sort-by=.metadata.creationTimestamp | tail -n 3
+<pre>
