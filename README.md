@@ -290,21 +290,6 @@ kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
 '
 </pre>
 
-Should look like similar to this
-
-</pre>
-+----------------+
-| Tables_in_demo |
-+----------------+
-| messages       |
-+----------------+
-+------------------+
-| rows_in_messages |
-+------------------+
-|                2 |
-+------------------+
-</pre>
-
 ## Clean up the entire environment
 
 <pre>
