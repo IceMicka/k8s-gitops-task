@@ -11,18 +11,15 @@
 
 ## Architecture
 
-Docker -> Kubernetes (1 server, 3 agents)
-|-- MetalLB: provides external IPs for LoadBalancer Services
-|-- ingress-nginx: HTTP/HTTPS ingress
-|-- Argo CD (installed via Terraform)
-    |-- Root app that syncs this repo:
-        |-- infrastructure (MySQL chart + init + backup CronJob + PVC)
-        |-- applications (custom Helm chart: frontend + backend + ingress)
-        |-- policies (resource quotas and limit ranges)
-|-- Namespaces:
-    |-- argocd
-    |-- infrastructure
-    |-- applications
+Docker (k3d) → Kubernetes (1 server, 3 agents)
+MetalLB — assigns IPs to LoadBalancer Services
+ingress-nginx — routes external HTTP to Services
+Argo CD (installed by Terraform)
+Root app (“App of Apps”) that syncs this repo:
+infrastructure — MySQL chart + init + backup CronJob + PVC
+applications — custom Helm chart: frontend + backend + Ingress
+policies — ResourceQuota + LimitRange
+Namespaces: argocd, infrastructure, applications
 
 ---
 
@@ -30,35 +27,36 @@ Docker -> Kubernetes (1 server, 3 agents)
 
 ├─ README.md
 ├─ terraform/
-│ ├─ providers.tf # helm/kubernetes/kubectl
-│ ├─ namespaces.tf # argocd, infrastructure, applications
-│ ├─ metallb.tf # MetalLB + IPAddressPool
-│ ├─ ingress-nginx.tf # ingress-nginx chart
-│ ├─ argocd.tf # Argo CD chart + argocd Ingress
-│ ├─ apps.tf # Argo CD Applications
-│ ├─ secrets.tf # mysql-root-password secrets
-│ ├─ variables.tf # repo_url, mysql_root_password
-│ └─ argocd-apps/ # YAMLs by Argo CD
-│ ├─ root.yaml
-│ ├─ infrastructure.yaml
-│ ├─ applications.yaml
-│ ├─ policies.yaml
-│ └─ mysql-backup.yaml
+│  ├─ providers.tf
+│  ├─ namespaces.tf
+│  ├─ metallb.tf
+│  ├─ ingress-nginx.tf
+│  ├─ argocd.tf
+│  ├─ apps.tf
+│  ├─ secrets.tf
+│  ├─ variables.tf
+│  └─ argocd-apps/
+│     ├─ root.yaml
+│     ├─ infrastructure.yaml
+│     ├─ applications.yaml
+│     ├─ policies.yaml
+│     └─ mysql-backup.yaml
 ├─ applications/
-│ └─ myapp/ # custom Helm chart
-│ ├─ Chart.yaml
-│ ├─ values.yaml
-│ └─ templates/
-│ ├─ backend.yaml
-│ ├─ frontend.yaml
-│ └─ ingress.yaml
+│  └─ myapp/
+│     ├─ Chart.yaml
+│     ├─ values.yaml
+│     └─ templates/
+│        ├─ backend.yaml
+│        ├─ frontend.yaml
+│        └─ ingress.yaml
 ├─ infrastructure/
-│ ├─ mysql-values.yaml
-│ ├─ mysql-initdb-configmap.yaml
-│ ├─ backup-pvc.yaml
-│ └─ backup-cronjob.yaml
+│  ├─ mysql-values.yaml
+│  ├─ mysql-initdb-configmap.yaml
+│  ├─ backup-pvc.yaml
+│  └─ backup-cronjob.yaml
 └─ proxy/
-└─ argocd-proxy.conf.example
+   └─ argocd-proxy.conf.example
+
 
 ---
 
