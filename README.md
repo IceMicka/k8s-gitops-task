@@ -25,7 +25,6 @@
 
 ## Repository layout
 
-```text
 ├─ README.md
 ├─ terraform/
 │  ├─ providers.tf
