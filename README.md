@@ -57,7 +57,6 @@
 │  └─ backup-cronjob.yaml
 └─ proxy/
    └─ argocd-proxy.conf.example
-```text
 
 ---
 
