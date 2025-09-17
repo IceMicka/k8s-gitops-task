@@ -1,0 +1,26 @@
+backend:
+  image: hashicorp/http-echo:0.2.3
+  args:
+    - "-text=Hello from backend"
+  replicas: 3
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+frontend:
+  image: nginx:1.27-alpine
+  replicas: 3
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+ingressHost: myapp.localtest.me
+

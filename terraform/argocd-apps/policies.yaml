@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/IceMicka/k8s-gitops-task.git
+    targetRevision: HEAD
+    path: applications/policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: applications
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-frontend
+  labels:
+    app: myapp-frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: myapp-frontend
+  template:
+    metadata:
+      labels:
+        app: myapp-frontend
+    spec:
+      containers:
+      - name: nginx
+        image: {{ .Values.frontend.image }}
+        ports:
+        - containerPort: 80
+        resources:
+{{- toYaml .Values.frontend.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-frontend
+spec:
+  selector:
+    app: myapp-frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+

@@ -1,0 +1,4 @@
+repoServer:
+  env:
+    - name: HELM_EXPERIMENTAL_OCI
+      value: "1"

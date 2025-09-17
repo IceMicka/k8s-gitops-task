@@ -1,0 +1,9 @@
+auth:
+  existingSecret: mysql-root-password
+  database: demo
+  createDatabase: true
+
+primary:
+  persistence:
+    enabled: true
+    size: 1Gi

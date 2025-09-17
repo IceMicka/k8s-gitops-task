@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  namespace: infrastructure
+  annotations:
+    argocd.argoproj.io/compare-options: IgnoreExtraneous
+spec:
+  schedule: "*/5 * * * *" 
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 10
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: mysql:8.2
+            env:
+            - name: MYSQL_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-root-password
+                  key: password
+            command: ["/bin/sh","-lc"]
+            args:
+            - |
+              set -e
+              TS=$(date +%Y%m%d-%H%M%S)
+              mkdir -p /backups
+              mysqldump -h mysql -u root --all-databases --single-transaction --routines --events \
+                | gzip -c > /backups/backup-${TS}.sql.gz
+              ls -1t /backups/backup-*.sql.gz | tail -n +11 | xargs -r rm -f
+            volumeMounts:
+            - name: backup-vol
+              mountPath: /backups
+          volumes:
+          - name: backup-vol
+            persistentVolumeClaim:
+              claimName: mysql-backup-pvc
