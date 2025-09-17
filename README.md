@@ -74,7 +74,7 @@ Install Docker Desktop and enable “Use the WSL 2 based engine”
 
 <pre>
 sudo apt-get update -y && sudo apt-get upgrade -y
-<pre>
+</pre>
 
 <pre>   
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
@@ -91,14 +91,14 @@ echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://
   | sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update -y && sudo apt-get install -y terraform
 terraform version
-<pre>
+</pre>
    
 ## Clone the repo
 
 <pre>
 git clone https://github.com/IceMicka/k8s-gitops-task.git
 cd k8s-gitops-task
-<pre>
+</pre>
    
 ## Create 1 server + 3 agents; disable K3s servicelb (we use MetalLB)
 
@@ -110,7 +110,7 @@ k3d cluster create dev-cluster \
 
 kubectl config use-context k3d-dev-cluster
 kubectl get nodes -o wide
-<pre>
+</pre>
    
 ## Terraform installs MetalLB, ingress-nginx, Argo CD, creates namespaces, applies the Argo CD Applications (App of Apps).
 
@@ -121,7 +121,7 @@ terraform init
 terraform apply -auto-approve \
   -var="repo_url=https://github.com/IceMicka/k8s-gitops-task.git" \
   -var="mysql_root_password=***"  # passwd is a variable needs to set with the apply
-<pre>
+</pre>
    
 Verify the workload is running as expected
 
@@ -129,7 +129,7 @@ Verify the workload is running as expected
 kubectl get pods -A
 kubectl -n argocd get deploy,svc,ing
 kubectl -n ingress-nginx get svc,pods -o wide
-<pre>
+</pre>
    
 ## Create nginx container inside WSL that forwards to the MetalLB IP
 Get the MetalLB IP of the ingress controller service
@@ -138,14 +138,14 @@ Get the MetalLB IP of the ingress controller service
 export INGRESS_IP=$(kubectl -n ingress-nginx \
   get svc ingress-nginx-controller \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-<pre>
+</pre>
    
 Proxy config that points to INGRESS_IP
 
 <pre>
 sed "s/REPLACE_ME_IP/${INGRESS_IP}/g" \
   ../proxy/argocd-proxy.conf.example > ../proxy/argocd-proxy.conf
-<pre>
+</pre>
    
 Start the proxy container
 
@@ -156,7 +156,7 @@ docker run -d --restart unless-stopped --name argocd-proxy \
   -p 18080:18080 \
   -v "$PWD/proxy/argocd-proxy.conf:/etc/nginx/conf.d/default.conf:ro" \
   nginx:1.25
-<pre>
+</pre>
    
 If on windows add to C:\Windows\System32\drivers\etc\hosts but run as Admin
 127.0.0.1  argocd.localtest.me myapp.localtest.me
@@ -173,7 +173,7 @@ Get the initial admin passwd
 <pre>
 kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath='{.data.password}' | base64 -d; echo
-<pre>
+</pre>
    
 ## Database and backups
    
@@ -184,7 +184,7 @@ Basic checks
 
 <pre>
 kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
-<pre>
+</pre>
    
 Should like similar to this
 <pre> ```ice@LAPTOP-66P41854:~$ kubectl -n infrastructure get statefulset,svc,pvc,cm,cronjob,job | sed -n '1,120p'
@@ -239,13 +239,13 @@ spec:
     persistentVolumeClaim:
       claimName: mysql-backup-pvc
 EOF
-<pre>
+</pre>
 
 List backups written by the cronjob
 
 <pre>
 kubectl -n infrastructure exec -it pod/backup-inspect -- sh -lc 'ls -lt /backup | head'  
-<pre>
+</pre>
    
 ## Access the frontend & confirm backend + DB persistence
 
@@ -260,7 +260,7 @@ kubectl -n applications run curl --image=curlimages/curl:8.7.1 -it --rm --restar
     echo "Backend Service:";   nslookup myapp-backend || true
     echo "Backend /health:";   curl -sS http://myapp-backend:5678/health || true
   '<
-<pre>
+</pre>
 
 Verify DB schema/data
 
@@ -272,7 +272,7 @@ kubectl -n infrastructure exec -it statefulset/mysql -- bash -lc '
     SELECT COUNT(*) AS rows_in_messages FROM messages;
   "
 '
-<pre>
+</pre>
 
 ## Clean up the entire environment
 
@@ -281,31 +281,31 @@ cd terraform
 terraform destroy -auto-approve
 
 k3d cluster delete dev-cluster
-<pre>
+</pre>
    
 ## Checklist
 Check the nodes
 
 <pre>
 kubectl get nodes -o wide
-<pre>
+</pre>
    
 ArgoCD apps synced and Healthy
 <pre>
 kubectl -n argocd get applications
-<pre>
+</pre>
    
 Check the ingress
 
 <pre>
 kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
-<pre>
+</pre>
    
 Check app objects
    
 <pre>
 kubectl -n applications get deploy,svc,ingress
-<pre>
+</pre>
    
 Check backups are running
 
